@@ -1,6 +1,6 @@
 {
   "name": "league-client",
-  "productName": "LeagueClient",
+  "productName": "league-client",
   "version": "1.0.0",
   "description": "Alternative League of Legends Client",
   "repository": {
