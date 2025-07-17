@@ -54,6 +54,19 @@ const config: ForgeConfig = {
       [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),
   ],
+  publishers: [
+    {
+      name: "@electron-forge/publisher-github",
+      config: {
+        repository: {
+          owner: "xchrizl",
+          name: "league-client",
+        },
+        prerelease: true,
+        draft: true,
+      },
+    },
+  ],
 };
 
 export default config;
