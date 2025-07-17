@@ -41,11 +41,16 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Setup Mono and Wine
-        run: apt-get install -y mono wine
-
       - name: Install NPM dependencies
         run: npm ci
+
+      - name: Install wine and mono
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            wine64 \
+            mono-devel \
+            ca-certificates-mono
 
       - name: Publish Electron App
         run: npm run publish
