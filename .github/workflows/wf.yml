@@ -53,6 +53,6 @@ jobs:
             ca-certificates-mono
 
       - name: Publish Electron App
-        run: npm run publish
+        run: npm run publish -- -arch x64 --platform win32
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
