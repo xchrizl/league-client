@@ -2,6 +2,16 @@ import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { updateElectronApp } from "update-electron-app";
+import { getLeaguePath, LCUService, Lockfile } from "./services/lcu";
+import { Agent, setGlobalDispatcher } from "undici";
+
+const agent = new Agent({
+  connect: {
+    rejectUnauthorized: false,
+  },
+});
+
+setGlobalDispatcher(agent);
 
 // Update the app if necessary
 updateElectronApp();
@@ -30,6 +40,8 @@ const createWindow = () => {
     );
   }
 
+  mainWindow.setMenuBarVisibility(false);
+
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
 
@@ -39,6 +51,27 @@ const createWindow = () => {
       mainWindow.webContents.toggleDevTools();
     }
   });
+
+  const leaguePath = getLeaguePath();
+  if (leaguePath) {
+    console.log(`League of Legends found at: ${leaguePath}`);
+
+    const lockfile = Lockfile.fromFile(path.join(leaguePath, "lockfile"));
+    if (lockfile) {
+      console.log("Lockfile found:");
+      console.log(lockfile);
+
+      const lcuService = new LCUService(lockfile);
+      lcuService
+        .get("/lol-chat/v1/me")
+        .then((response) => {
+          console.log("LCU Service response:", response);
+        })
+        .catch((error) => {
+          console.error("Error fetching LCU data:", error);
+        });
+    }
+  }
 };
 
 // This method will be called when Electron has finished
