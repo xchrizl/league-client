@@ -25,16 +25,12 @@
  *  });
  * ```
  */
-
-console.log(
-  '👋 This message is being logged by "renderer.ts", included via Vite'
-);
-
 import { createApp } from "vue";
 import App from "./App.vue";
 import { createRouter, createWebHashHistory } from "vue-router";
 import HomeView from "./views/HomeView.vue";
 import AboutView from "./views/AboutView.vue";
+import "./style.css";
 
 const app = createApp(App);
 

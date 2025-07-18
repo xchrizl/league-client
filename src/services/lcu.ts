@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-export function getLeaguePath(defaultPath?: string): string | null {
+export function findLeaguePath(defaultPath?: string): string | null {
   let leaguePath = null;
 
   const paths = [
@@ -19,12 +19,12 @@ export function getLeaguePath(defaultPath?: string): string | null {
 
   if (
     defaultPath &&
+    !leaguePath &&
     fs.existsSync(path.join(defaultPath, "LeagueClient.exe"))
   ) {
     leaguePath = defaultPath;
   }
 
-  console.warn("League of Legends installation path not found.");
   return leaguePath;
 }
 
@@ -86,25 +86,46 @@ export class Lockfile {
 }
 
 export class LCUService {
-  private lockfile: Lockfile;
+  private lockfilePath: string;
+  private lockfileCache: { timestamp: number; lockfile: Lockfile } | null;
 
-  constructor(lockfile: Lockfile) {
-    this.lockfile = lockfile;
+  constructor(lockfilePath: string) {
+    this.lockfilePath = lockfilePath;
+    this.lockfileCache = null;
   }
 
   getLockfile(): Lockfile {
-    return this.lockfile;
+    const currentTime = Date.now();
+    if (
+      this.lockfileCache &&
+      currentTime - this.lockfileCache.timestamp < 10000 // Cache for 10 seconds
+    ) {
+      return this.lockfileCache.lockfile;
+    }
+
+    const lockfile = Lockfile.fromFile(this.lockfilePath);
+    if (!lockfile) {
+      throw new Error("Failed to read lockfile.");
+    }
+
+    this.lockfileCache = {
+      timestamp: currentTime,
+      lockfile: lockfile,
+    };
+    return lockfile;
   }
 
   private url(path: string): string {
-    return `${this.lockfile.getURL()}${path}`;
+    return `${this.getLockfile().getURL()}${path}`;
   }
 
-  async get(path: string): Promise<any> {
-    const response = await fetch(this.url(path), {
+  async get<T>(path: string): Promise<T> {
+    const url = this.url(path);
+    console.log(`Fetching from LCU: ${url}`);
+    const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: this.lockfile.getAuthHeader(),
+        Authorization: this.getLockfile().getAuthHeader(),
       },
     });
 
@@ -114,4 +135,111 @@ export class LCUService {
 
     return response.json();
   }
+}
+
+export interface LolChatMe {
+  availability: string;
+  gameName: string;
+  gameTag: string;
+  icon: number;
+  id: string;
+  lastSeenOnlineTimestamp: number | null;
+  lol: {
+    championId: string;
+    companionId: string;
+    damageSkinId: string;
+    gameQueueType: string;
+    gameStatus: string;
+    iconOverride: string;
+    legendaryMasteryScore: string;
+    level: string;
+    mapId: string;
+    mapSkinId: string;
+    puuid: string;
+    rankedLeagueDivision: string;
+    rankedLeagueQueue: string;
+    rankedLeagueTier: string;
+    rankedLosses: string;
+    rankedPrevSeasonDivision: string;
+    rankedPrevSeasonTier: string;
+    rankedSplitRewardLevel: string;
+    rankedWins: string;
+    regalia: string; // JSON string
+    skinVariant: string;
+    skinname: string;
+  };
+  name: string;
+  obfuscatedSummonerId: number;
+  patchline: string;
+  pid: string;
+  platformId: string;
+  product: string;
+  productName: string;
+  puuid: string;
+  statusMessage: string;
+  summary: string;
+  summonerId: number;
+  time: number;
+}
+
+export interface LolChatFriend {
+  summonerId: number;
+  id: string;
+  name: string;
+  pid: string;
+  puuid: string;
+  gameName: string;
+  gameTag: string;
+  icon: number;
+  availability: string;
+  platformId: string;
+  patchline: string;
+  product: string;
+  productName: string;
+  summary: string;
+  time: number;
+  statusMessage: string;
+  note: string;
+  lastSeenOnlineTimestamp: string;
+  isP2PConversationMuted: boolean;
+  groupId: number;
+  displayGroupId: number;
+  groupName: string;
+  displayGroupName: string;
+  lol: {
+    bannerIdSelected: string;
+    challengeCrystalLevel: string;
+    challengePoints: string;
+    challengeTokensSelected: string;
+    championId: string;
+    companionId: string;
+    damageSkinId: string;
+    gameId: string;
+    gameMode: string;
+    gameQueueType: string;
+    gameStatus: string;
+    iconOverride: string;
+    isObservable: string;
+    legendaryMasteryScore: string;
+    level: string;
+    mapId: string;
+    mapSkinId: string;
+    playerTitleSelected: string;
+    profileIcon: string;
+    pty: string;
+    puuid: string;
+    queueId: string;
+    rankedLeagueDivision: string;
+    rankedLeagueQueue: string;
+    rankedLeagueTier: string;
+    rankedLosses: string;
+    rankedPrevSeasonDivision: string;
+    rankedPrevSeasonTier: string;
+    rankedSplitRewardLevel: string;
+    rankedWins: string;
+    regalia: string;
+    skinVariant: string;
+    skinname: string;
+    timeStamp: string;
+  };
 }

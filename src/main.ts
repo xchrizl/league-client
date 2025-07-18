@@ -1,9 +1,9 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import { updateElectronApp } from "update-electron-app";
-import { getLeaguePath, LCUService, Lockfile } from "./services/lcu";
 import { Agent, setGlobalDispatcher } from "undici";
+import { findLeaguePath, LCUService, LolChatMe } from "./services/lcu";
 
 const agent = new Agent({
   connect: {
@@ -20,6 +20,16 @@ updateElectronApp();
 if (started) {
   app.quit();
 }
+
+const leaguePath = findLeaguePath();
+if (leaguePath) {
+  console.log(`League of Legends found at: ${leaguePath}`);
+} else {
+  console.error("League of Legends not found. Please ensure it is installed.");
+  app.quit();
+}
+
+const lcuService = new LCUService(path.join(leaguePath, "lockfile"));
 
 const createWindow = () => {
   // Create the browser window.
@@ -52,32 +62,33 @@ const createWindow = () => {
     }
   });
 
-  const leaguePath = getLeaguePath();
+  /*const leaguePath = getLeaguePath();
   if (leaguePath) {
     console.log(`League of Legends found at: ${leaguePath}`);
 
-    const lockfile = Lockfile.fromFile(path.join(leaguePath, "lockfile"));
-    if (lockfile) {
-      console.log("Lockfile found:");
-      console.log(lockfile);
+    const lockfilePath = path.join(leaguePath, "lockfile");
+    const lcuService = new LCUService(lockfilePath);
 
-      const lcuService = new LCUService(lockfile);
-      lcuService
-        .get("/lol-chat/v1/me")
-        .then((response) => {
-          console.log("LCU Service response:", response);
-        })
-        .catch((error) => {
-          console.error("Error fetching LCU data:", error);
-        });
-    }
-  }
+    setInterval(async () => {
+      try {
+        const data = await lcuService.get<PlayerPresence>("/lol-chat/v1/me");
+        console.log("LCU Data:", data.gameName);
+      } catch (error) {
+        console.error("Error fetching LCU data:", error);
+      }
+    }, 1000); // Check every second
+  }*/
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", createWindow);
+app.whenReady().then(() => {
+  ipcMain.handle("get-chat-info", handleChatInfo);
+  ipcMain.handle("get-league-path", handleLeaguePath);
+  ipcMain.handle("get-friends", handleGetFriends);
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -98,3 +109,21 @@ app.on("activate", () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+const handleChatInfo = async () => {
+  const chatInfo = await lcuService.get<LolChatMe>("/lol-chat/v1/me");
+  return chatInfo;
+};
+
+const handleLeaguePath = () => {
+  return leaguePath;
+};
+
+const handleGetFriends = async () => {
+  try {
+    const friends = await lcuService.get("/lol-chat/v1/friends");
+    return friends;
+  } catch (error) {
+    console.error("Error fetching friends:", error);
+    throw error;
+  }
+};
