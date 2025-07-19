@@ -8,7 +8,7 @@
       width="100%"
       class="pa-4"
     >
-      <h1 class="text-center">💖 Hello World from HomeView!</h1>
+      <h1 class="text-center">💖 Hello World from ProfileView!</h1>
     </v-sheet>
   </v-container>
 </template>

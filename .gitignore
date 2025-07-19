@@ -90,3 +90,7 @@ typings/
 
 # Electron-Forge
 out/
+
+# Auto-generated type declarations
+auto-imports.d.ts
+components.d.ts

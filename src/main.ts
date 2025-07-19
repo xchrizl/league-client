@@ -3,7 +3,8 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import { updateElectronApp } from "update-electron-app";
 import { Agent, setGlobalDispatcher } from "undici";
-import { findLeaguePath, LCUService, LolChatMe } from "./services/lcu";
+import { LCU } from "./lcu";
+import { LolChatMe } from "./lcu/types";
 
 const agent = new Agent({
   connect: {
@@ -21,7 +22,7 @@ if (started) {
   app.quit();
 }
 
-const leaguePath = findLeaguePath();
+const leaguePath = LCU.findLeaguePath();
 if (leaguePath) {
   console.log(`League of Legends found at: ${leaguePath}`);
 } else {
@@ -29,7 +30,7 @@ if (leaguePath) {
   app.quit();
 }
 
-const lcuService = new LCUService(path.join(leaguePath, "lockfile"));
+const lcu = new LCU(path.join(leaguePath, "lockfile"));
 
 const createWindow = () => {
   // Create the browser window.
@@ -61,23 +62,6 @@ const createWindow = () => {
       mainWindow.webContents.toggleDevTools();
     }
   });
-
-  /*const leaguePath = getLeaguePath();
-  if (leaguePath) {
-    console.log(`League of Legends found at: ${leaguePath}`);
-
-    const lockfilePath = path.join(leaguePath, "lockfile");
-    const lcuService = new LCUService(lockfilePath);
-
-    setInterval(async () => {
-      try {
-        const data = await lcuService.get<PlayerPresence>("/lol-chat/v1/me");
-        console.log("LCU Data:", data.gameName);
-      } catch (error) {
-        console.error("Error fetching LCU data:", error);
-      }
-    }, 1000); // Check every second
-  }*/
 };
 
 // This method will be called when Electron has finished
@@ -110,7 +94,7 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 const handleChatInfo = async () => {
-  const chatInfo = await lcuService.get<LolChatMe>("/lol-chat/v1/me");
+  const chatInfo = await lcu.get<LolChatMe>("/lol-chat/v1/me");
   return chatInfo;
 };
 
@@ -120,7 +104,7 @@ const handleLeaguePath = () => {
 
 const handleGetFriends = async () => {
   try {
-    const friends = await lcuService.get("/lol-chat/v1/friends");
+    const friends = await lcu.get("/lol-chat/v1/friends");
     return friends;
   } catch (error) {
     console.error("Error fetching friends:", error);
