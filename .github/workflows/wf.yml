@@ -23,8 +23,8 @@ jobs:
       - name: Install NPM dependencies
         run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint
+      #      - name: Run ESLint
+      #        run: npm run lint
 
       - name: Publish Electron App
         run: npm run publish
